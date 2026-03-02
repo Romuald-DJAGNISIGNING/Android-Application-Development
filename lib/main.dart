@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'core/providers/grade_calculator_controller.dart';
-import 'features/export/export_actions.dart';
 import 'features/import/ui/import_panel.dart';
 import 'features/results/ui/results_dashboard.dart';
 
@@ -23,9 +22,12 @@ class GradeCalcApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: base.copyWith(
         textTheme: GoogleFonts.spaceGroteskTextTheme(base.textTheme),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0E5A8A),
-          brightness: Brightness.light,
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF0E5A8A),
+          secondary: Color(0xFF1C8D74),
+          surface: Color(0xFFFFFFFF),
+          onSurface: Color(0xFF0F172A),
+          onPrimary: Colors.white,
         ),
       ),
       home: const GradeCalcHomePage(),
@@ -44,7 +46,7 @@ class GradeCalcHomePage extends ConsumerWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF09203F), Color(0xFF537895)],
+            colors: [Color(0xFF091B34), Color(0xFF2E5C87), Color(0xFF65A5D3)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -53,14 +55,26 @@ class GradeCalcHomePage extends ConsumerWidget {
           child: Stack(
             children: [
               Positioned(
-                top: -80,
+                top: -50,
+                left: -60,
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.10),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -60,
                 right: -40,
                 child: Container(
                   width: 260,
                   height: 260,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.09),
+                    color: const Color(0xFF9CE7D4).withValues(alpha: 0.22),
                   ),
                 ),
               ),
@@ -74,9 +88,7 @@ class GradeCalcHomePage extends ConsumerWidget {
                       const _HeroHeader(),
                       const SizedBox(height: 20),
                       const ImportPanel(),
-                      const SizedBox(height: 12),
-                      const ExportActions(),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       const ResultsDashboard(),
                     ],
                   ),
@@ -104,29 +116,44 @@ class _HeroHeader extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Colors.white.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Student Grade Calculator',
-            style: TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w700,
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              fontWeight: FontWeight.w800,
               color: Colors.white,
+              letterSpacing: -0.6,
             ),
           ),
-          SizedBox(height: 8),
-          Text(
-            'Dart / Flutter Edition - fast offline processing, strong validation, polished workbook export.',
+          const SizedBox(height: 6),
+          const Text(
+            'Built for class demos: fast processing, strict validation, and clean report export.',
             style: TextStyle(color: Colors.white70, fontSize: 15),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFB8F0E3).withValues(alpha: 0.20),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const Text(
+              'Offline | CSV + XLSX | Issue Log + Charts',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 }
-

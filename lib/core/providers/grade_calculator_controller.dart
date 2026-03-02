@@ -15,6 +15,7 @@ class GradeCalculatorState {
     this.loading = false,
     this.sourcePath,
     this.report,
+    this.chart = const ChartDataset(points: []),
     this.error,
     this.lastExportPath,
   });
@@ -22,6 +23,7 @@ class GradeCalculatorState {
   final bool loading;
   final String? sourcePath;
   final ProcessingReport? report;
+  final ChartDataset chart;
   final String? error;
   final String? lastExportPath;
 
@@ -29,6 +31,7 @@ class GradeCalculatorState {
     bool? loading,
     String? sourcePath,
     ProcessingReport? report,
+    ChartDataset? chart,
     String? error,
     String? lastExportPath,
   }) {
@@ -36,6 +39,7 @@ class GradeCalculatorState {
       loading: loading ?? this.loading,
       sourcePath: sourcePath ?? this.sourcePath,
       report: report ?? this.report,
+      chart: chart ?? this.chart,
       error: error,
       lastExportPath: lastExportPath ?? this.lastExportPath,
     );
@@ -74,13 +78,11 @@ class GradeCalculatorController extends Notifier<GradeCalculatorState> {
         loading: false,
         sourcePath: path,
         report: report,
+        chart: _chartBuilder.buildGradeDistribution(report),
         error: null,
       );
     } catch (error) {
-      state = state.copyWith(
-        loading: false,
-        error: error.toString(),
-      );
+      state = state.copyWith(loading: false, error: error.toString());
     }
   }
 
@@ -112,24 +114,10 @@ class GradeCalculatorController extends Notifier<GradeCalculatorState> {
 
       final exportResult = await _exportService.export(report, finalPath);
 
-      state = state.copyWith(
-        loading: false,
-        lastExportPath: exportResult.path,
-      );
+      state = state.copyWith(loading: false, lastExportPath: exportResult.path);
     } catch (error) {
-      state = state.copyWith(
-        loading: false,
-        error: error.toString(),
-      );
+      state = state.copyWith(loading: false, error: error.toString());
     }
-  }
-
-  ChartDataset buildChartDataset() {
-    final report = state.report;
-    if (report == null) {
-      return const ChartDataset(points: []);
-    }
-    return _chartBuilder.buildGradeDistribution(report);
   }
 
   String get sourceFileName {
@@ -143,5 +131,5 @@ class GradeCalculatorController extends Notifier<GradeCalculatorState> {
 
 final gradeCalculatorProvider =
     NotifierProvider<GradeCalculatorController, GradeCalculatorState>(
-  GradeCalculatorController.new,
-);
+      GradeCalculatorController.new,
+    );

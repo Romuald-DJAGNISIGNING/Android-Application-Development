@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:collection/collection.dart';
 
 import '../models/grade_config.dart';
@@ -24,8 +22,7 @@ class GradingEngine {
       final evaluation = _evaluate(row);
       issues.addAll(evaluation.issues);
       return evaluation.result;
-    }).toList()
-      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+    }).toList()..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
 
     final summary = _buildSummary(graded);
 
@@ -42,6 +39,7 @@ class GradingEngine {
   ) {
     final byKey = <String, StudentInputRow>{};
 
+    // I keep the latest row since class sheets usually append corrected marks.
     for (final row in rows) {
       final key = _dedupeKey(row);
       if (key == null) {
@@ -85,7 +83,8 @@ class GradingEngine {
 
     final name = row.name?.trim();
     final matricule = row.matricule?.trim();
-    final hasIdentity = (name?.isNotEmpty == true) || (matricule?.isNotEmpty == true);
+    final hasIdentity =
+        (name?.isNotEmpty == true) || (matricule?.isNotEmpty == true);
 
     final caPresent = row.ca?.trim().isNotEmpty == true;
     final examPresent = row.exam?.trim().isNotEmpty == true;
@@ -155,9 +154,7 @@ class GradingEngine {
       );
     }
 
-    final roundedScore = finalScore == null
-        ? null
-        : double.parse(finalScore.toStringAsFixed(2));
+    final roundedScore = finalScore == null ? null : _round2(finalScore);
     final letter = config.letterForScore(roundedScore, unknown: unknown);
     final pass = roundedScore != null && roundedScore >= config.passCutoff;
 
@@ -176,20 +173,41 @@ class GradingEngine {
     return _Evaluation(result: result, issues: issues);
   }
 
-  _ScoreDecision _resolveFinalScore(NormalizedStudent row, List<String> reasons) {
-    if (row.caPresent && row.examPresent && row.ca != null && row.exam != null) {
+  _ScoreDecision _resolveFinalScore(
+    NormalizedStudent row,
+    List<String> reasons,
+  ) {
+    if (row.caPresent &&
+        row.examPresent &&
+        row.ca != null &&
+        row.exam != null) {
       final ca = row.ca!;
       final exam = row.exam!;
 
       if (NumericParser.inRange(ca, 0, config.caMaxRaw) &&
           NumericParser.inRange(exam, 0, config.examMaxRaw)) {
-        return _ScoreDecision(score: ca + exam, source: 'CA+Exam (raw)', usedFallback: false);
+        final rawScore = ca + exam;
+        if (_isScoreValid(rawScore)) {
+          return _ScoreDecision(
+            score: rawScore,
+            source: 'CA+Exam (raw)',
+            usedFallback: false,
+          );
+        }
+        reasons.add('CA/Exam raw score is outside 0..100');
       }
 
       if (NumericParser.inRange(ca, 0, config.maxPercent) &&
           NumericParser.inRange(exam, 0, config.maxPercent)) {
         final weighted = (ca * config.caWeight) + (exam * config.examWeight);
-        return _ScoreDecision(score: weighted, source: 'CA+Exam (weighted)', usedFallback: false);
+        if (_isScoreValid(weighted)) {
+          return _ScoreDecision(
+            score: weighted,
+            source: 'CA+Exam (weighted)',
+            usedFallback: false,
+          );
+        }
+        reasons.add('Weighted CA/Exam score is outside 0..100');
       }
 
       reasons.add('CA/Exam values are out of accepted ranges');
@@ -199,8 +217,12 @@ class GradingEngine {
 
     if (row.totalPresent && row.total != null) {
       final total = row.total!;
-      if (NumericParser.inRange(total, 0, config.maxPercent)) {
-        return _ScoreDecision(score: total, source: 'Total (fallback)', usedFallback: true);
+      if (_isScoreValid(total)) {
+        return _ScoreDecision(
+          score: total,
+          source: 'Total (fallback)',
+          usedFallback: true,
+        );
       }
       reasons.add('Total is out of 0..100 range');
     }
@@ -209,7 +231,11 @@ class GradingEngine {
       reasons.add('Total is present but invalid');
     }
 
-    return const _ScoreDecision(score: null, source: 'Unavailable', usedFallback: false);
+    return const _ScoreDecision(
+      score: null,
+      source: 'Unavailable',
+      usedFallback: false,
+    );
   }
 
   ProcessingSummary _buildSummary(List<GradeResult> results) {
@@ -221,17 +247,16 @@ class GradingEngine {
       gradeCounts[result.letter] = (gradeCounts[result.letter] ?? 0) + 1;
     }
 
-    final gradedScores = results
-        .where((result) => result.status == GradeStatus.graded)
-        .map((result) => result.finalScore!)
-        .toList()
-      ..sort();
+    final gradedScores =
+        results
+            .where((result) => result.status == GradeStatus.graded)
+            .map((result) => result.finalScore!)
+            .toList()
+          ..sort();
 
     final gradedRows = gradedScores.length;
     final unknownRows = results.length - gradedRows;
-    final average = gradedRows == 0
-        ? 0.0
-        : gradedScores.sum / max(gradedRows, 1);
+    final average = gradedRows == 0 ? 0.0 : gradedScores.sum / gradedRows;
 
     final median = _median(gradedScores);
     final passCount = results
@@ -260,6 +285,11 @@ class GradingEngine {
     }
     return (sorted[mid - 1] + sorted[mid]) / 2;
   }
+
+  bool _isScoreValid(double value) =>
+      NumericParser.inRange(value, 0, config.maxPercent);
+
+  double _round2(double value) => double.parse(value.toStringAsFixed(2));
 }
 
 class _Evaluation {

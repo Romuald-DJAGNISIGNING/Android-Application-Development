@@ -1,4 +1,16 @@
 class NumericParser {
+  static const _missingTokens = {
+    'na',
+    'n/a',
+    'none',
+    'null',
+    'absent',
+    'missing',
+    '-',
+    '--',
+    'x',
+  };
+
   static double? parseFlexible(String? value) {
     if (value == null) {
       return null;
@@ -7,11 +19,20 @@ class NumericParser {
     if (compact.isEmpty) {
       return null;
     }
+    if (_missingTokens.contains(compact.toLowerCase())) {
+      return null;
+    }
 
-    final normalized = compact
-        .replaceAll(RegExp(r'\s+'), '')
-        .replaceAll(',', '.')
-        .replaceAll(RegExp(r'[^0-9.\-]'), '');
+    // I normalize aggressively here because class files are usually messy.
+    var normalized = compact.replaceAll(RegExp(r'\s+'), '');
+
+    if (normalized.contains(',') && normalized.contains('.')) {
+      normalized = normalized.replaceAll(',', '');
+    } else {
+      normalized = normalized.replaceAll(',', '.');
+    }
+
+    normalized = normalized.replaceAll(RegExp(r'[^0-9.\-]'), '');
 
     if (normalized.isEmpty || normalized == '-' || normalized == '.') {
       return null;

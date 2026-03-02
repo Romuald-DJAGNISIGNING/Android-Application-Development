@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/models/chart_dataset.dart';
 import '../../../core/models/grade_config.dart';
 import '../../../core/models/grade_result.dart';
+import '../../../core/models/processing_summary.dart';
 import '../../../core/models/validation_issue.dart';
 import '../../../core/providers/grade_calculator_controller.dart';
 
@@ -15,82 +16,81 @@ class ResultsDashboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(gradeCalculatorProvider);
-    final controller = ref.read(gradeCalculatorProvider.notifier);
     final report = state.report;
-
     if (report == null) {
       return const SizedBox.shrink();
     }
 
-    final chart = controller.buildChartDataset();
-    final summary = report.summary;
-    final formatter = NumberFormat('0.00');
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 450),
-      child: Column(
-        key: ValueKey(summary.totalRows),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _metricCard('Rows', summary.totalRows.toString(), const Color(0xFF0E5A8A)),
-              _metricCard('Average', formatter.format(summary.average), const Color(0xFF2C8E5A)),
-              _metricCard('Median', formatter.format(summary.median), const Color(0xFF7A5C00)),
-              _metricCard('Pass Rate', '${formatter.format(summary.passRate)}%', const Color(0xFF7B2CBF)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Card(
-            elevation: 6,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                height: 260,
-                child: Row(
-                  children: [
-                    Expanded(child: _buildPieChart(chart)),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildLegend(chart)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            elevation: 6,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: _buildTopTable(report.results),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            elevation: 6,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: _buildIssues(report.issues),
-            ),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SummaryStrip(summary: report.summary),
+        const SizedBox(height: 16),
+        _ChartPanel(chart: state.chart),
+        const SizedBox(height: 16),
+        _PreviewPanel(results: report.results),
+        const SizedBox(height: 16),
+        _IssuePanel(issues: report.issues),
+      ],
     );
   }
+}
 
-  Widget _metricCard(String label, String value, Color accent) {
+class _SummaryStrip extends StatelessWidget {
+  const _SummaryStrip({required this.summary});
+
+  final ProcessingSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat('0.00');
+    final entries = [
+      ('Rows', summary.totalRows.toString(), const Color(0xFF0E5A8A)),
+      ('Average', fmt.format(summary.average), const Color(0xFF1C8D74)),
+      ('Median', fmt.format(summary.median), const Color(0xFFB46B00)),
+      (
+        'Pass Rate',
+        '${fmt.format(summary.passRate)}%',
+        const Color(0xFF5E3AA8),
+      ),
+    ];
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: entries
+          .map(
+            (entry) =>
+                _KpiCard(label: entry.$1, value: entry.$2, accent: entry.$3),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _KpiCard extends StatelessWidget {
+  const _KpiCard({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: 190,
+      width: 188,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [accent.withValues(alpha: 0.92), accent.withValues(alpha: 0.75)],
+          colors: [
+            accent.withValues(alpha: 0.90),
+            accent.withValues(alpha: 0.74),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -98,13 +98,16 @@ class ResultsDashboard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
           const SizedBox(height: 6),
           Text(
             value,
             style: const TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               fontSize: 22,
             ),
           ),
@@ -112,53 +115,107 @@ class ResultsDashboard extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildPieChart(ChartDataset chart) {
+class _ChartPanel extends StatelessWidget {
+  const _ChartPanel({required this.chart});
+
+  final ChartDataset chart;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Panel(
+      title: 'Grade Distribution',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth > 860) {
+            return SizedBox(
+              height: 280,
+              child: Row(
+                children: [
+                  Expanded(child: _Pie(chart: chart)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _Legend(chart: chart)),
+                ],
+              ),
+            );
+          }
+
+          return Column(
+            children: [
+              SizedBox(height: 260, child: _Pie(chart: chart)),
+              const SizedBox(height: 12),
+              SizedBox(height: 180, child: _Legend(chart: chart)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _Pie extends StatelessWidget {
+  const _Pie({required this.chart});
+
+  final ChartDataset chart;
+
+  @override
+  Widget build(BuildContext context) {
     if (chart.points.isEmpty) {
-      return const Center(child: Text('No chart data yet'));
+      return const Center(child: Text('No chart data yet.'));
     }
 
-    final colors = <Color>[
-      const Color(0xFF2C8E5A),
-      const Color(0xFF1A73E8),
-      const Color(0xFF7B2CBF),
-      const Color(0xFFD97706),
-      const Color(0xFF6B7280),
-      const Color(0xFFB91C1C),
-      const Color(0xFF8B5CF6),
-      const Color(0xFF047857),
-      const Color(0xFF111827),
+    const colors = <Color>[
+      Color(0xFF1C8D74),
+      Color(0xFF0E5A8A),
+      Color(0xFF5E3AA8),
+      Color(0xFFB46B00),
+      Color(0xFF64748B),
+      Color(0xFFB91C1C),
+      Color(0xFF1E40AF),
+      Color(0xFF7C2D12),
+      Color(0xFF0F172A),
     ];
 
     return PieChart(
       PieChartData(
         sectionsSpace: 2,
-        centerSpaceRadius: 42,
-        sections: chart.points.asMap().entries.map((entry) {
-          final index = entry.key;
-          final point = entry.value;
-          return PieChartSectionData(
-            title: point.label,
-            value: point.count.toDouble(),
-            radius: 80,
-            color: colors[index % colors.length],
-            titleStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          );
-        }).toList(growable: false),
+        centerSpaceRadius: 40,
+        sections: chart.points
+            .asMap()
+            .entries
+            .map((entry) {
+              final point = entry.value;
+              return PieChartSectionData(
+                title: point.label,
+                value: point.count.toDouble(),
+                radius: 82,
+                color: colors[entry.key % colors.length],
+                titleStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 12,
+                ),
+              );
+            })
+            .toList(growable: false),
       ),
     );
   }
+}
 
-  Widget _buildLegend(ChartDataset chart) {
+class _Legend extends StatelessWidget {
+  const _Legend({required this.chart});
+
+  final ChartDataset chart;
+
+  @override
+  Widget build(BuildContext context) {
     if (chart.points.isEmpty) {
       return const SizedBox.shrink();
     }
 
     final total = chart.points.fold<int>(0, (sum, point) => sum + point.count);
-
     return ListView.builder(
       itemCount: chart.points.length,
       itemBuilder: (context, index) {
@@ -166,107 +223,155 @@ class ResultsDashboard extends ConsumerWidget {
         final ratio = total == 0 ? 0 : (point.count / total) * 100;
         return ListTile(
           dense: true,
-          contentPadding: EdgeInsets.zero,
           title: Text('Grade ${point.label}'),
           trailing: Text('${point.count} (${ratio.toStringAsFixed(1)}%)'),
         );
       },
     );
   }
+}
 
-  Widget _buildTopTable(List<GradeResult> results) {
-    final preview = results.take(12).toList(growable: false);
+class _PreviewPanel extends StatelessWidget {
+  const _PreviewPanel({required this.results});
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Top Preview Rows',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columns: const [
-              DataColumn(label: Text('Row')),
-              DataColumn(label: Text('Name')),
-              DataColumn(label: Text('Matricule')),
-              DataColumn(label: Text('Score')),
-              DataColumn(label: Text('Letter')),
-              DataColumn(label: Text('Pass')),
-              DataColumn(label: Text('Source')),
-            ],
-            rows: preview
-                .map(
-                  (result) => DataRow(cells: [
-                    DataCell(Text(result.rowIndex.toString())),
+  final List<GradeResult> results;
+
+  @override
+  Widget build(BuildContext context) {
+    // I keep the UI preview intentionally small so huge classes stay smooth.
+    final preview = results.take(15).toList(growable: false);
+    final textTheme = Theme.of(context).textTheme;
+
+    return _Panel(
+      title: 'Processed Rows (Preview)',
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingTextStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+          columns: const [
+            DataColumn(label: Text('Row')),
+            DataColumn(label: Text('Name')),
+            DataColumn(label: Text('Matricule')),
+            DataColumn(label: Text('Score')),
+            DataColumn(label: Text('Letter')),
+            DataColumn(label: Text('Pass')),
+            DataColumn(label: Text('Source')),
+          ],
+          rows: preview
+              .map(
+                (result) => DataRow(
+                  cells: [
+                    DataCell(Text('${result.rowIndex}')),
                     DataCell(Text(result.name ?? '-')),
                     DataCell(Text(result.matricule ?? '-')),
-                    DataCell(Text(result.finalScore?.toStringAsFixed(2) ?? '-')),
+                    DataCell(
+                      Text(result.finalScore?.toStringAsFixed(2) ?? '-'),
+                    ),
                     DataCell(Text(result.letter.label)),
                     DataCell(Text(result.pass ? 'Yes' : 'No')),
                     DataCell(Text(result.source)),
-                  ]),
-                )
-                .toList(growable: false),
-          ),
+                  ],
+                ),
+              )
+              .toList(growable: false),
         ),
-      ],
-    );
-  }
-
-  Widget _buildIssues(List<ValidationIssue> issues) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Validation & Processing Issues',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 10),
-        if (issues.isEmpty)
-          const Text('No issues detected.')
-        else
-          SizedBox(
-            height: 200,
-            child: ListView.separated(
-              itemCount: issues.length,
-              separatorBuilder: (context, index) => const Divider(height: 8),
-              itemBuilder: (context, index) {
-                final issue = issues[index];
-                final accent = switch (issue.severity) {
-                  IssueSeverity.error => const Color(0xFFB71C1C),
-                  IssueSeverity.warning => const Color(0xFFB26A00),
-                  IssueSeverity.info => const Color(0xFF0E5A8A),
-                };
-                return Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.report_gmailerrorred_rounded, color: accent),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          '[Row ${issue.rowIndex}] ${issue.code}: ${issue.message}',
-                          style: TextStyle(color: accent, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-      ],
+      ),
     );
   }
 }
 
+class _IssuePanel extends StatelessWidget {
+  const _IssuePanel({required this.issues});
 
+  final List<ValidationIssue> issues;
 
+  @override
+  Widget build(BuildContext context) {
+    if (issues.isEmpty) {
+      return const _Panel(
+        title: 'Validation & Processing Issues',
+        child: Text('No issues detected.'),
+      );
+    }
+
+    return _Panel(
+      title: 'Validation & Processing Issues (${issues.length})',
+      child: SizedBox(
+        height: 240,
+        child: ListView.separated(
+          itemCount: issues.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final issue = issues[index];
+            final accent = switch (issue.severity) {
+              IssueSeverity.error => const Color(0xFFB71C1C),
+              IssueSeverity.warning => const Color(0xFFA16207),
+              IssueSeverity.info => const Color(0xFF0E5A8A),
+            };
+            return Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.report_gmailerrorred_rounded,
+                    color: accent,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '[Row ${issue.rowIndex}] ${issue.code}: ${issue.message}',
+                      style: TextStyle(
+                        color: accent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _Panel extends StatelessWidget {
+  const _Panel({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 7,
+      shadowColor: const Color(0x1509203F),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 10),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
