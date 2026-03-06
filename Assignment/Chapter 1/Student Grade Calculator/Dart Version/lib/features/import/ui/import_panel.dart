@@ -11,109 +11,257 @@ class ImportPanel extends ConsumerWidget {
     final state = ref.watch(gradeCalculatorProvider);
     final controller = ref.read(gradeCalculatorProvider.notifier);
     final canExport = state.report != null && !state.loading;
+    final theme = Theme.of(context);
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE5ECF7)),
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: const Color(0xFFE7DDCF)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x1509203F),
-            blurRadius: 20,
-            offset: Offset(0, 10),
+            color: Color(0x141D2A38),
+            blurRadius: 26,
+            offset: Offset(0, 20),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Import Student Marks',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'CSV/XLSX only. Latest duplicate row wins, and every issue is logged.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF475569)),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
+        padding: const EdgeInsets.all(24),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth > 860;
+            final left = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FilledButton.icon(
-                  onPressed: state.loading ? null : controller.importAndProcess,
-                  icon: const Icon(Icons.upload_file_rounded),
-                  label: const Text('Import & Process'),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 9,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF18314F),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    'Import Studio',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                 ),
-                FilledButton.tonalIcon(
-                  onPressed: canExport ? controller.exportWorkbook : null,
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text('Export Workbook'),
+                const SizedBox(height: 16),
+                Text(
+                  'Turn raw class sheets into a polished academic report.',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: const Color(0xFF16212E),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Import CSV or XLSX, let the grading engine validate every record, and export a styled workbook ready for faculty review.',
+                  style: theme.textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: const [
+                    _FeatureChip(
+                      icon: Icons.rule_folder_outlined,
+                      label: 'Strict edge-case rules',
+                    ),
+                    _FeatureChip(
+                      icon: Icons.auto_graph_rounded,
+                      label: 'Dashboard analytics',
+                    ),
+                    _FeatureChip(
+                      icon: Icons.table_chart_rounded,
+                      label: 'Styled workbook export',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: state.loading
+                          ? null
+                          : controller.importAndProcess,
+                      icon: const Icon(Icons.upload_file_rounded),
+                      label: const Text('Import & Process'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: canExport ? controller.exportWorkbook : null,
+                      icon: const Icon(Icons.download_rounded),
+                      label: const Text('Export Workbook'),
+                    ),
+                  ],
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            _metaChip(
-              icon: Icons.description_outlined,
-              text: controller.sourceFileName,
-              iconColor: const Color(0xFF0E5A8A),
-            ),
-            if (state.error != null) ...[
-              const SizedBox(height: 12),
-              _metaChip(
-                icon: Icons.error_outline_rounded,
-                text: state.error!,
-                iconColor: const Color(0xFFB71C1C),
-                background: const Color(0xFFFFEBEE),
-              ),
-            ],
-            if (state.lastExportPath != null) ...[
-              const SizedBox(height: 12),
-              _metaChip(
-                icon: Icons.check_circle_outline_rounded,
-                text: 'Workbook saved to: ${state.lastExportPath}',
-                iconColor: const Color(0xFF1B5E20),
-                background: const Color(0xFFE8F5E9),
-              ),
-            ],
-          ],
+            );
+
+            final right = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _StatusCard(
+                  title: 'Source File',
+                  body: controller.sourceFileName,
+                  accent: const Color(0xFF18314F),
+                  background: const Color(0xFFF2EFE8),
+                  icon: Icons.description_outlined,
+                ),
+                const SizedBox(height: 12),
+                _StatusCard(
+                  title: 'Processing Rule',
+                  body:
+                      'Latest duplicate wins. Invalid or incoherent rows are marked X and fully logged.',
+                  accent: const Color(0xFF24706A),
+                  background: const Color(0xFFEAF4F2),
+                  icon: Icons.verified_outlined,
+                ),
+                if (state.error != null) ...[
+                  const SizedBox(height: 12),
+                  _StatusCard(
+                    title: 'Current Alert',
+                    body: state.error!,
+                    accent: const Color(0xFFA33B2F),
+                    background: const Color(0xFFFBE6E3),
+                    icon: Icons.report_gmailerrorred_rounded,
+                  ),
+                ],
+                if (state.lastExportPath != null) ...[
+                  const SizedBox(height: 12),
+                  _StatusCard(
+                    title: 'Latest Export',
+                    body: state.lastExportPath!,
+                    accent: const Color(0xFF336C4F),
+                    background: const Color(0xFFE7F3EB),
+                    icon: Icons.workspace_premium_outlined,
+                  ),
+                ],
+              ],
+            );
+
+            if (!wide) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [left, const SizedBox(height: 18), right],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: left),
+                const SizedBox(width: 22),
+                Expanded(flex: 2, child: right),
+              ],
+            );
+          },
         ),
       ),
     );
   }
+}
 
-  Widget _metaChip({
-    required IconData icon,
-    required String text,
-    required Color iconColor,
-    Color background = const Color(0xFFF1F5F9),
-  }) {
+class _FeatureChip extends StatelessWidget {
+  const _FeatureChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFFF5EFE5),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFE4D4BD)),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: iconColor, size: 18),
-          const SizedBox(width: 10),
+          Icon(icon, color: const Color(0xFFB8743C), size: 18),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF2B3442),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({
+    required this.title,
+    required this.body,
+    required this.accent,
+    required this.background,
+    required this.icon,
+  });
+
+  final String title;
+  final String body;
+  final Color accent;
+  final Color background;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: accent.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: accent),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              text,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: iconColor, fontWeight: FontWeight.w600),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: accent,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  body,
+                  style: const TextStyle(
+                    color: Color(0xFF2E3A48),
+                    fontWeight: FontWeight.w600,
+                    height: 1.45,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

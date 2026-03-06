@@ -2,16 +2,16 @@ enum LetterGrade { a, bPlus, b, cPlus, c, dPlus, d, f, x }
 
 extension LetterGradeX on LetterGrade {
   String get label => switch (this) {
-        LetterGrade.a => 'A',
-        LetterGrade.bPlus => 'B+',
-        LetterGrade.b => 'B',
-        LetterGrade.cPlus => 'C+',
-        LetterGrade.c => 'C',
-        LetterGrade.dPlus => 'D+',
-        LetterGrade.d => 'D',
-        LetterGrade.f => 'F',
-        LetterGrade.x => 'X',
-      };
+    LetterGrade.a => 'A',
+    LetterGrade.bPlus => 'B+',
+    LetterGrade.b => 'B',
+    LetterGrade.cPlus => 'C+',
+    LetterGrade.c => 'C',
+    LetterGrade.dPlus => 'D+',
+    LetterGrade.d => 'D',
+    LetterGrade.f => 'F',
+    LetterGrade.x => 'X',
+  };
 }
 
 class GradeBand {

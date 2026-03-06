@@ -37,13 +37,7 @@ class ColumnMappingConfig {
       'assignment',
       'test',
     },
-    examAliases: {
-      'exam',
-      'exammark',
-      'examscore',
-      'finalexam',
-      'final_exam',
-    },
+    examAliases: {'exam', 'exammark', 'examscore', 'finalexam', 'final_exam'},
     totalAliases: {
       'total',
       'totalmark',
