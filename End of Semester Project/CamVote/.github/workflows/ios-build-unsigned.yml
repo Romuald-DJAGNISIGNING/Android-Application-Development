@@ -1,0 +1,263 @@
+name: iOS Build (Unsigned)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "ios/**"
+      - "lib/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - ".github/workflows/ios-build-unsigned.yml"
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "CAMVOTE_API_BASE_URL override"
+        required: false
+        default: "https://camvote.romuald-djagnisigning.workers.dev"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios-unsigned:
+    name: Build iOS Unsigned Archive
+    runs-on: macos-latest
+    env:
+      CAMVOTE_FIREBASE_WEB_API_KEY: ${{ secrets.CAMVOTE_FIREBASE_WEB_API_KEY }}
+      CAMVOTE_FIREBASE_ANDROID_API_KEY: ${{ secrets.CAMVOTE_FIREBASE_ANDROID_API_KEY }}
+      CAMVOTE_FIREBASE_IOS_API_KEY: ${{ secrets.CAMVOTE_FIREBASE_IOS_API_KEY }}
+      IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.9"
+          channel: stable
+          cache: true
+
+      - name: Resolve API Base URL
+        id: api
+        shell: bash
+        run: |
+          api="${{ inputs.api_base_url }}"
+          if [ -z "$api" ]; then
+            api="https://camvote.romuald-djagnisigning.workers.dev"
+          fi
+          echo "value=$api" >> "$GITHUB_OUTPUT"
+
+      - name: Check Firebase Keys (Optional for Unsigned Builds)
+        id: firebase_keys
+        shell: bash
+        run: |
+          missing=0
+          for key in CAMVOTE_FIREBASE_WEB_API_KEY CAMVOTE_FIREBASE_ANDROID_API_KEY CAMVOTE_FIREBASE_IOS_API_KEY; do
+            if [ -z "${!key:-}" ]; then
+              echo "::warning::Missing $key. Unsigned iOS build will continue; Firebase config validation will be skipped."
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 0 ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore GoogleService-Info.plist
+        shell: bash
+        run: |
+          if [ -f ios/Runner/GoogleService-Info.plist ]; then
+            exit 0
+          fi
+          if [ -n "$IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64" ]; then
+            mkdir -p ios/Runner
+            printf '%s' "$IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > ios/Runner/GoogleService-Info.plist
+            exit 0
+          fi
+
+          echo "::warning::IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 is not set. Generating fallback ios/Runner/GoogleService-Info.plist from known Firebase iOS settings."
+          api_key="${CAMVOTE_FIREBASE_IOS_API_KEY:-DUMMY_API_KEY}"
+          mkdir -p ios/Runner
+          cat > ios/Runner/GoogleService-Info.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>API_KEY</key>
+            <string>${api_key}</string>
+            <key>GCM_SENDER_ID</key>
+            <string>543751728187</string>
+            <key>PLIST_VERSION</key>
+            <string>1</string>
+            <key>BUNDLE_ID</key>
+            <string>com.camvote.app</string>
+            <key>PROJECT_ID</key>
+            <string>camvote--backend</string>
+            <key>STORAGE_BUCKET</key>
+            <string>camvote--backend.firebasestorage.app</string>
+            <key>IS_ADS_ENABLED</key>
+            <false/>
+            <key>IS_ANALYTICS_ENABLED</key>
+            <false/>
+            <key>IS_APPINVITE_ENABLED</key>
+            <true/>
+            <key>IS_GCM_ENABLED</key>
+            <true/>
+            <key>IS_SIGNIN_ENABLED</key>
+            <true/>
+            <key>GOOGLE_APP_ID</key>
+            <string>1:543751728187:ios:46947c86fcd4026f6ac01e</string>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Validate Firebase Mobile Config
+        if: steps.firebase_keys.outputs.ok == 'true'
+        run: dart run tools/validate_firebase_mobile_config.dart --allow-missing-native-files
+
+      - name: Init Build Logs
+        shell: bash
+        run: |
+          # Ensure logs exist even if early steps fail.
+          : > ios-build.log
+          : > pods-install.log
+
+      - name: Install CocoaPods Dependencies
+        id: pods
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+
+          if ! command -v pod >/dev/null 2>&1; then
+            echo "CocoaPods not found; installing..." | tee -a pods-install.log
+            sudo gem install cocoapods -N 2>&1 | tee -a pods-install.log
+          fi
+
+          cd ios
+          pod --version 2>&1 | tee -a ../pods-install.log
+          pod install --repo-update 2>&1 | tee -a ../pods-install.log
+
+      - name: Build Unsigned iOS App
+        id: build
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          flutter build ios --release --no-codesign \
+            --dart-define=CAMVOTE_API_BASE_URL=${{ steps.api.outputs.value }} \
+            --dart-define=CAMVOTE_FIREBASE_WEB_API_KEY=${{ env.CAMVOTE_FIREBASE_WEB_API_KEY }} \
+            --dart-define=CAMVOTE_FIREBASE_ANDROID_API_KEY=${{ env.CAMVOTE_FIREBASE_ANDROID_API_KEY }} \
+            --dart-define=CAMVOTE_FIREBASE_IOS_API_KEY=${{ env.CAMVOTE_FIREBASE_IOS_API_KEY }} \
+            -v 2>&1 | tee ios-build.log
+
+      - name: Extract Build Errors
+        if: always()
+        shell: bash
+        run: |
+          for log in pods-install.log ios-build.log; do
+            if [ ! -f "$log" ]; then
+              echo "::warning::${log} not found."
+              continue
+            fi
+
+            # Prefer the most actionable lines; keep the volume low so annotations remain readable.
+            matches="$(grep -niE '(error:|fatal error:|\\bError \\(Xcode\\)|\\bException\\b|\\bFAILED\\b|\\bCocoaPods\\b|\\bPodfile\\b|No such file or directory|No such module|Command PhaseScriptExecution failed|xcodebuild: error:)' "$log" | tail -n 50 || true)"
+            if [ -n "$matches" ]; then
+              while IFS= read -r line; do
+                # Escape workflow command control characters.
+                msg="$(printf '%s' "$log: $line" | sed -e 's/%/%25/g' -e 's/\r/%0D/g')"
+                echo "::error::${msg}"
+              done <<< "$matches"
+            else
+              # Fallback: emit the tail of the log as one annotation so it is visible without downloading artifacts.
+              tail_content="$(tail -n 120 "$log" | sed -e 's/%/%25/g' -e 's/\r/%0D/g')"
+              tail_content="${tail_content//$'\n'/%0A}"
+              echo "::error::No obvious error patterns found in $log. Last 120 log lines:%0A${tail_content}"
+            fi
+          done
+
+      - name: Package iOS Artifacts
+        id: package
+        shell: bash
+        if: always()
+        env:
+          PODS_OUTCOME: ${{ steps.pods.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts/ios
+
+          cat > release-artifacts/ios/ci-info.txt <<EOF
+          workflow=$GITHUB_WORKFLOW
+          run_id=$GITHUB_RUN_ID
+          run_attempt=$GITHUB_RUN_ATTEMPT
+          sha=$GITHUB_SHA
+          ref=$GITHUB_REF
+          actor=$GITHUB_ACTOR
+          pods_outcome=$PODS_OUTCOME
+          build_outcome=$BUILD_OUTCOME
+          EOF
+
+          cp -f pods-install.log release-artifacts/ios/pods-install.log 2>/dev/null || true
+          cp -f ios-build.log release-artifacts/ios/ios-build.log 2>/dev/null || true
+
+          if [ -d build/ios/iphoneos/Runner.app ]; then
+            runner_app_zip="release-artifacts/ios/Runner.app.zip"
+            ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app "$runner_app_zip"
+
+            # Convenience: package an unsigned .ipa for Windows sideload tools (AltStore/Sideloadly).
+            # This is just a zip with a top-level Payload/Runner.app and is not installable until signed.
+            unsigned_ipa="release-artifacts/ios/Runner-unsigned.ipa"
+            tmpdir="$(mktemp -d)"
+            mkdir -p "$tmpdir/Payload"
+            cp -R build/ios/iphoneos/Runner.app "$tmpdir/Payload/"
+            if command -v zip >/dev/null 2>&1; then
+              (cd "$tmpdir" && zip -qry "$GITHUB_WORKSPACE/$unsigned_ipa" Payload)
+            else
+              (cd "$tmpdir" && ditto -c -k --sequesterRsrc Payload "$GITHUB_WORKSPACE/$unsigned_ipa")
+            fi
+            rm -rf "$tmpdir"
+          fi
+
+          archive_path=$(find build/ios/archive -maxdepth 1 -name "*.xcarchive" | head -n 1 || true)
+          if [ -n "$archive_path" ]; then
+            archive_zip="release-artifacts/ios/$(basename "$archive_path").zip"
+            ditto -c -k --sequesterRsrc --keepParent "$archive_path" "$archive_zip"
+          fi
+
+          ipa_path=$(find build/ios/ipa -maxdepth 1 -name "*.ipa" | head -n 1 || true)
+          if [ -n "$ipa_path" ]; then
+            cp "$ipa_path" release-artifacts/ios/
+          fi
+
+          (
+            cd release-artifacts/ios
+            shopt -s nullglob
+            files=( * )
+            shasum -a 256 "${files[@]}" > sha256.txt
+          )
+
+          echo "path=release-artifacts/ios" >> "$GITHUB_OUTPUT"
+
+      - name: Upload iOS Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-unsigned-artifacts
+          path: ${{ steps.package.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Fail If Build Failed
+        if: steps.build.outcome != 'success'
+        run: exit 1

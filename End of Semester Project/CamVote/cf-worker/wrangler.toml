@@ -1,0 +1,59 @@
+name = "camvote"
+main = "src/index.ts"
+compatibility_date = "2024-11-05"
+
+[[r2_buckets]]
+binding = "R2_PRIMARY"
+bucket_name = "camvote-primary"
+preview_bucket_name = "camvote-primary-preview"
+
+[[r2_buckets]]
+binding = "R2_BACKUP"
+bucket_name = "camvote-backup"
+preview_bucket_name = "camvote-backup-preview"
+
+[vars]
+# Comma-separated list of allowed origins. Use "*" to allow all.
+ALLOWED_ORIGINS = "*"
+# Security hardening defaults (tune per environment).
+DEVICE_MAX_PER_USER = "1"
+STORAGE_UPLOAD_MAX_BYTES = "10485760"
+DEVICE_REGISTER_RATE_LIMIT_WINDOW_SECONDS = "3600"
+DEVICE_REGISTER_RATE_LIMIT_MAX_REQUESTS = "25"
+VOTE_NONCE_RATE_LIMIT_WINDOW_SECONDS = "600"
+VOTE_NONCE_RATE_LIMIT_MAX_REQUESTS = "15"
+VOTE_CAST_RATE_LIMIT_WINDOW_SECONDS = "600"
+VOTE_CAST_RATE_LIMIT_MAX_REQUESTS = "8"
+REGISTRATION_RATE_LIMIT_WINDOW_SECONDS = "86400"
+REGISTRATION_RATE_LIMIT_MAX_REQUESTS = "3"
+INCIDENT_SUBMIT_RATE_LIMIT_WINDOW_SECONDS = "3600"
+INCIDENT_SUBMIT_RATE_LIMIT_MAX_REQUESTS = "12"
+SUPPORT_TICKET_RATE_LIMIT_WINDOW_SECONDS = "3600"
+SUPPORT_TICKET_RATE_LIMIT_MAX_REQUESTS = "8"
+CAMGUIDE_RATE_LIMIT_WINDOW_SECONDS = "3600"
+CAMGUIDE_RATE_LIMIT_MAX_REQUESTS = "40"
+AUTH_RESOLVE_RATE_LIMIT_WINDOW_SECONDS = "600"
+AUTH_RESOLVE_RATE_LIMIT_MAX_REQUESTS = "30"
+AUTH_REFRESH_RATE_LIMIT_WINDOW_SECONDS = "600"
+AUTH_REFRESH_RATE_LIMIT_MAX_REQUESTS = "30"
+# Optional public board id for Trello dashboard proxy.
+TRELLO_BOARD_ID = "6958e93f42229fbf46c11df3"
+# Tip/support public config (non-secret)
+TAPTAP_SEND_URL = "https://www.taptapsend.com/"
+# Optional deep-link base for TapTap app launch on mobile.
+TAPTAP_SEND_DEEP_LINK = "taptapsend://send"
+# Remitly fallback links for tip flow.
+REMITLY_SEND_URL = "https://www.remitly.com/"
+REMITLY_SEND_DEEP_LINK = "remitly://send"
+TIP_ORANGE_MONEY_NAME = "ROMUALD DJAGNI SIGNING"
+TIP_ORANGE_MONEY_NUMBER_PUBLIC = "false"
+# Optional: public link/deep-link used by Orange Money Max It QR checkout cards.
+MAXIT_TIP_QR_URL = ""
+MAXIT_TIP_DEEP_LINK = ""
+# Required for support response email delivery via MailChannels.
+# NOTE: When SUPPORT_EMAIL_FROM is a Gmail address, MailChannels delivery to Gmail inboxes is likely to bounce due to DMARC.
+# Use Gmail API (set GMAIL_CLIENT_ID/GMAIL_CLIENT_SECRET/GMAIL_REFRESH_TOKEN as Worker secrets) or a non-Gmail sender.
+# Set MAILCHANNELS_API_KEY with `wrangler secret put MAILCHANNELS_API_KEY`.
+SUPPORT_EMAIL_FROM = "camvoteappassist@gmail.com"
+SUPPORT_EMAIL_REPLY_TO = "camvoteappassist@gmail.com"
+
