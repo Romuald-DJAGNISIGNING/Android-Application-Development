@@ -273,7 +273,7 @@ class _HeroHeader extends StatelessWidget {
             children: [
               _heroChip(
                 icon: Icons.auto_awesome_rounded,
-                label: 'Editorial Dashboard | Export Studio',
+                label: 'Student Grade Calculator',
               ),
               const SizedBox(height: 18),
               Text(
@@ -286,7 +286,7 @@ class _HeroHeader extends StatelessWidget {
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 620),
                 child: Text(
-                  'A richer classroom dashboard with polished analytics, strict grading logic, and a workbook export that feels prepared for real faculty reporting.',
+                  'Import CSV or XLSX files, calculate grades, review the results, and export the final report.',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: const Color(0xFFE7EEF7),
                   ),
@@ -297,18 +297,9 @@ class _HeroHeader extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: const [
-                  _HeroPill(
-                    title: 'Visual Identity',
-                    value: 'Navy, copper, emerald',
-                  ),
-                  _HeroPill(
-                    title: 'Workbook Look',
-                    value: 'Styled title bands and report cards',
-                  ),
-                  _HeroPill(
-                    title: 'Workflow',
-                    value: 'Offline import, audit, export',
-                  ),
+                  _HeroPill(title: 'Input', value: 'CSV and XLSX files'),
+                  _HeroPill(title: 'Output', value: 'Summary and Excel report'),
+                  _HeroPill(title: 'Pass Mark', value: '65 and above'),
                 ],
               ),
             ],
@@ -325,27 +316,27 @@ class _HeroHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Presentation Notes',
+                  'Quick Notes',
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'The design pushes the assignment past a plain utility UI. It reads like a polished academic reporting tool while keeping the grading rules strict and fast.',
+                  'The app checks each row, calculates the final mark, and lists any missing or invalid data before export.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: const Color(0xFFE3ECF6),
                   ),
                 ),
                 const SizedBox(height: 16),
                 const _HeroMetric(
-                  label: 'Sheets exported',
-                  value: '4 styled tabs',
+                  label: 'Main Sheets',
+                  value: 'Grades, summary, issues, chart',
                 ),
                 const SizedBox(height: 10),
                 const _HeroMetric(
-                  label: 'Visual rhythm',
-                  value: 'Animated reveal + layered cards',
+                  label: 'Rule Used',
+                  value: 'Invalid rows are marked X',
                 ),
               ],
             ),

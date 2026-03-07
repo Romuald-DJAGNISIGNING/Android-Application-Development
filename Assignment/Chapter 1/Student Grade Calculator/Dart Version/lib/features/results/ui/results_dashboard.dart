@@ -49,28 +49,28 @@ class _SummaryStrip extends StatelessWidget {
       _MetricData(
         label: 'Rows Processed',
         value: summary.totalRows.toString(),
-        note: 'Full class list ingested',
+        note: 'Rows found in the file',
         accent: const Color(0xFF18314F),
         icon: Icons.layers_rounded,
       ),
       _MetricData(
         label: 'Average Score',
         value: fmt.format(summary.average),
-        note: 'Overall class trend',
+        note: 'Mean of graded scores',
         accent: const Color(0xFF24706A),
         icon: Icons.show_chart_rounded,
       ),
       _MetricData(
         label: 'Median Score',
         value: fmt.format(summary.median),
-        note: 'Center of the distribution',
+        note: 'Middle graded score',
         accent: const Color(0xFFB8743C),
         icon: Icons.balance_rounded,
       ),
       _MetricData(
         label: 'Pass Rate',
         value: '${fmt.format(summary.passRate)}%',
-        note: 'Students at C and above',
+        note: 'Students with 65 and above',
         accent: const Color(0xFF72408C),
         icon: Icons.workspace_premium_rounded,
       ),
@@ -183,9 +183,8 @@ class _ChartPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Panel(
       title: 'Grade Distribution',
-      eyebrow: 'Visual Breakdown',
-      subtitle:
-          'A cleaner read of the class profile with count bars and a presentation-ready pie chart.',
+      eyebrow: 'Grades',
+      subtitle: 'The chart and bars show the number of students in each grade.',
       child: LayoutBuilder(
         builder: (context, constraints) {
           final wide = constraints.maxWidth > 900;
@@ -390,9 +389,8 @@ class _PreviewPanel extends StatelessWidget {
 
     return _Panel(
       title: 'Processed Rows',
-      eyebrow: 'Curated Preview',
-      subtitle:
-          'A refined preview of the first rows so you can inspect the grading output before export.',
+      eyebrow: 'Preview',
+      subtitle: 'First rows from the processed list.',
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Column(
@@ -483,18 +481,17 @@ class _IssuePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (issues.isEmpty) {
       return const _Panel(
-        title: 'Validation And Processing Issues',
-        eyebrow: 'Quality Check',
-        subtitle: 'Everything is clean in the current batch.',
+        title: 'Issues',
+        eyebrow: 'Check',
+        subtitle: 'No issues were found in this file.',
         child: Text('No issues detected.'),
       );
     }
 
     return _Panel(
-      title: 'Validation And Processing Issues',
-      eyebrow: 'Audit Trail',
-      subtitle:
-          'Each warning or error is separated visually so you can review edge cases quickly.',
+      title: 'Issues',
+      eyebrow: 'Check',
+      subtitle: 'Missing, invalid, or duplicate rows are listed here.',
       child: SizedBox(
         height: 290,
         child: ListView.separated(

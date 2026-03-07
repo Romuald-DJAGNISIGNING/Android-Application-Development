@@ -50,7 +50,7 @@ class WorkbookExportService {
             sheet = sheet,
             palette = palette,
             title = "Student Grade Report",
-            subtitle = "Prepared from the Kotlin Android dashboard on ${timestamp()}",
+            subtitle = "Exported on ${timestamp()}",
             widths = listOf(8, 22, 18, 14, 10, 10, 14, 20, 36),
             lastColumn = header.lastIndex,
         )
@@ -86,8 +86,8 @@ class WorkbookExportService {
         decorateSheet(
             sheet = sheet,
             palette = palette,
-            title = "Executive Summary",
-            subtitle = "A compact overview of the class trend, pass rate, and grade spread.",
+            title = "Summary",
+            subtitle = "Average score, pass rate, and grade counts.",
             widths = listOf(28, 14),
             lastColumn = 1,
         )
@@ -124,8 +124,8 @@ class WorkbookExportService {
         decorateSheet(
             sheet = sheet,
             palette = palette,
-            title = "Issue Register",
-            subtitle = "Warnings, fallback decisions, and hard errors recorded during processing.",
+            title = "Issues",
+            subtitle = "Warnings, errors, and fallback cases found during processing.",
             widths = listOf(8, 14, 18, 44),
             lastColumn = 3,
         )
@@ -143,8 +143,8 @@ class WorkbookExportService {
         decorateSheet(
             sheet = sheet,
             palette = palette,
-            title = "Chart Data",
-            subtitle = "Chart-ready counts for lecturer review or chart recreation.",
+            title = "Grade Counts",
+            subtitle = "Counts used for the chart.",
             widths = listOf(14, 12),
             lastColumn = 1,
         )

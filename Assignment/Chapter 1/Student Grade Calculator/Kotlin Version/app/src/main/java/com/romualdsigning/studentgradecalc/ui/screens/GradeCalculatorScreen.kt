@@ -193,14 +193,14 @@ private fun HeroHeader() {
                 val wide = maxWidth > 720.dp
                 val content: @Composable () -> Unit = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        HeroChip(icon = Icons.Rounded.AutoAwesome, label = "Academic report studio")
+                        HeroChip(icon = Icons.Rounded.AutoAwesome, label = "Student Grade Calculator")
                         Text(
                             text = "Student Grade\nCalculator",
                             style = MaterialTheme.typography.displayMedium,
                             color = ComposeColor.White,
                         )
                         Text(
-                            text = "A polished mobile dashboard for importing class sheets, validating every edge case, and exporting a faculty-ready workbook.",
+                            text = "Import class marks, check the results, and export the final report.",
                             style = MaterialTheme.typography.bodyLarge,
                             color = ComposeColor(0xFFE7EEF7),
                         )
@@ -208,8 +208,9 @@ private fun HeroHeader() {
                             modifier = Modifier.horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            HeroPill("Palette", "Navy / copper / emerald")
-                            HeroPill("Export", "Styled 4-sheet workbook")
+                            HeroPill("Input", "CSV and XLSX files")
+                            HeroPill("Output", "Summary and Excel report")
+                            HeroPill("Pass Mark", "65 and above")
                         }
                     }
                 }
@@ -223,17 +224,17 @@ private fun HeroHeader() {
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         Text(
-                            text = "Presentation notes",
+                            text = "Quick notes",
                             style = MaterialTheme.typography.titleMedium,
                             color = ComposeColor.White,
                         )
                         Text(
-                            text = "The UI now reads like a real reporting tool instead of a quick form. The workbook keeps the same visual language so the export feels intentional too.",
+                            text = "The app checks each row, calculates the final mark, and lists missing or invalid data before export.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = ComposeColor(0xFFE3ECF6),
                         )
-                        HeroMetric("Sections", "Import, analytics, preview, audit")
-                        HeroMetric("Motion", "Soft reveal for each report block")
+                        HeroMetric("Main Sheets", "Grades, summary, issues, chart")
+                        HeroMetric("Rule Used", "Invalid rows are marked X")
                     }
                 }
 
@@ -300,18 +301,18 @@ private fun ActionPanel(
     onExport: () -> Unit,
 ) {
     EditorialPanel(
-        eyebrow = "Import Studio",
-        title = "Validate, grade, then export a polished class report.",
-        subtitle = "The workflow stays fully offline. Import CSV or XLSX, keep the latest duplicate, and send every edge case to the issue register.",
+        eyebrow = "Import",
+        title = "Load marks, calculate grades, and export the result.",
+        subtitle = "Import CSV or XLSX, keep the latest duplicate row, and list any issue before export.",
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                FeatureChip(icon = Icons.Rounded.RuleFolder, label = "Strict rules")
-                FeatureChip(icon = Icons.Rounded.AutoGraph, label = "Live analytics")
-                FeatureChip(icon = Icons.Rounded.Description, label = "Styled workbook")
+                FeatureChip(icon = Icons.Rounded.RuleFolder, label = "Grade rules")
+                FeatureChip(icon = Icons.Rounded.AutoGraph, label = "Summary chart")
+                FeatureChip(icon = Icons.Rounded.Description, label = "Excel export")
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -353,7 +354,7 @@ private fun ActionPanel(
             )
             StatusCard(
                 title = "Processing rule",
-                body = "If a student appears more than once, the latest row wins. Missing or incoherent scores become X and are logged.",
+                body = "If the same student appears more than once, the last row is kept. Invalid or missing marks are marked X.",
                 accent = ComposeColor(0xFF24706A),
                 icon = Icons.Rounded.Verified,
             )
@@ -422,16 +423,16 @@ private fun StatusCard(title: String, body: String, accent: ComposeColor, icon: 
 @Composable
 private fun SummarySection(summary: ProcessingSummary) {
     val cards = listOf(
-        SummaryCardData("Rows Processed", summary.totalRows.toString(), "Complete imported class size", ComposeColor(0xFF18314F)),
-        SummaryCardData("Average Score", "%.2f".format(summary.average), "Overall class trend", ComposeColor(0xFF24706A)),
-        SummaryCardData("Median Score", "%.2f".format(summary.median), "Center of the score spread", ComposeColor(0xFFB8743C)),
-        SummaryCardData("Pass Rate", "%.2f%%".format(summary.passRate), "Students at C and above", ComposeColor(0xFF72408C)),
+        SummaryCardData("Rows Processed", summary.totalRows.toString(), "Rows found in the file", ComposeColor(0xFF18314F)),
+        SummaryCardData("Average Score", "%.2f".format(summary.average), "Mean of graded scores", ComposeColor(0xFF24706A)),
+        SummaryCardData("Median Score", "%.2f".format(summary.median), "Middle graded score", ComposeColor(0xFFB8743C)),
+        SummaryCardData("Pass Rate", "%.2f%%".format(summary.passRate), "Students with 65 and above", ComposeColor(0xFF72408C)),
     )
 
     EditorialPanel(
         eyebrow = "Summary",
-        title = "A cleaner reading of the class profile.",
-        subtitle = "These cards surface the numbers I would usually mention first during a quick walkthrough or lecturer demo.",
+        title = "Main values from the current file.",
+        subtitle = "This section shows the total rows, average, median, and pass rate.",
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             cards.chunked(2).forEach { row ->
@@ -474,9 +475,9 @@ private fun SummaryCard(data: SummaryCardData, modifier: Modifier = Modifier) {
 @Composable
 private fun ChartSection(points: List<ChartPoint>) {
     EditorialPanel(
-        eyebrow = "Visual Breakdown",
-        title = "Grade distribution with a presentation-ready chart.",
-        subtitle = "The pie chart gives the quick overview while the bars underneath make the counts easier to compare precisely.",
+        eyebrow = "Grades",
+        title = "Grade distribution",
+        subtitle = "The chart and bars show the number of students in each grade.",
     ) {
         if (points.isEmpty()) {
             Text("No chart data available.", style = MaterialTheme.typography.bodyLarge)
@@ -595,9 +596,9 @@ private fun ResultsPreview(results: List<GradeResult>) {
     val headers = listOf("Row", "Name", "Matricule", "Score", "Letter", "Pass", "Source")
 
     EditorialPanel(
-        eyebrow = "Curated Preview",
-        title = "Inspect the first rows before exporting.",
-        subtitle = "This preview is intentionally compact. It gives enough confidence to verify the batch without forcing the phone UI to render the entire dataset.",
+        eyebrow = "Preview",
+        title = "Processed rows",
+        subtitle = "First rows from the processed file.",
     ) {
         Column(
             modifier = Modifier
@@ -672,12 +673,12 @@ private fun GradeBadge(letter: String) {
 @Composable
 private fun IssuesSection(issues: List<ValidationIssue>) {
     EditorialPanel(
-        eyebrow = "Audit Trail",
-        title = "Warnings and errors remain visible, not hidden.",
-        subtitle = "Every problematic row is separated visually so it is easy to explain why a record was graded, skipped, or marked X.",
+        eyebrow = "Issues",
+        title = "Rows that need attention",
+        subtitle = "Missing, invalid, or duplicate data is listed here.",
     ) {
         if (issues.isEmpty()) {
-            Text("No issues detected in the current batch.", style = MaterialTheme.typography.bodyLarge)
+            Text("No issues were found in this file.", style = MaterialTheme.typography.bodyLarge)
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 issues.take(25).forEach { issue ->
@@ -685,7 +686,7 @@ private fun IssuesSection(issues: List<ValidationIssue>) {
                 }
                 if (issues.size > 25) {
                     Text(
-                        text = "Showing the first 25 issues to keep the screen lightweight.",
+                        text = "Showing the first 25 issues.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )

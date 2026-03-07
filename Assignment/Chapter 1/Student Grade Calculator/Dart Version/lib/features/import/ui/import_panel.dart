@@ -44,7 +44,7 @@ class ImportPanel extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: const Text(
-                    'Import Studio',
+                    'Import',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
@@ -54,14 +54,14 @@ class ImportPanel extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Turn raw class sheets into a polished academic report.',
+                  'Load student marks and create the final report.',
                   style: theme.textTheme.headlineMedium?.copyWith(
                     color: const Color(0xFF16212E),
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Import CSV or XLSX, let the grading engine validate every record, and export a styled workbook ready for faculty review.',
+                  'Choose a CSV or XLSX file, process the marks, and export the result as an Excel workbook.',
                   style: theme.textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 18),
@@ -71,15 +71,15 @@ class ImportPanel extends ConsumerWidget {
                   children: const [
                     _FeatureChip(
                       icon: Icons.rule_folder_outlined,
-                      label: 'Strict edge-case rules',
+                      label: 'Grade rules',
                     ),
                     _FeatureChip(
                       icon: Icons.auto_graph_rounded,
-                      label: 'Dashboard analytics',
+                      label: 'Summary chart',
                     ),
                     _FeatureChip(
                       icon: Icons.table_chart_rounded,
-                      label: 'Styled workbook export',
+                      label: 'Excel export',
                     ),
                   ],
                 ),
@@ -93,7 +93,7 @@ class ImportPanel extends ConsumerWidget {
                           ? null
                           : controller.importAndProcess,
                       icon: const Icon(Icons.upload_file_rounded),
-                      label: const Text('Import & Process'),
+                      label: const Text('Import File'),
                     ),
                     OutlinedButton.icon(
                       onPressed: canExport ? controller.exportWorkbook : null,
@@ -119,7 +119,7 @@ class ImportPanel extends ConsumerWidget {
                 _StatusCard(
                   title: 'Processing Rule',
                   body:
-                      'Latest duplicate wins. Invalid or incoherent rows are marked X and fully logged.',
+                      'If the same student appears more than once, the last row is kept. Invalid or missing marks are marked X.',
                   accent: const Color(0xFF24706A),
                   background: const Color(0xFFEAF4F2),
                   icon: Icons.verified_outlined,

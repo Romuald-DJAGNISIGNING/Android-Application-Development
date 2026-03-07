@@ -63,7 +63,7 @@ class WorkbookExportService {
       sheet,
       title: 'Student Grade Report',
       subtitle:
-          'Prepared from the Dart desktop dashboard on ${DateFormat('MMM d, y - HH:mm').format(DateTime.now())}',
+          'Exported on ${DateFormat('MMM d, y - HH:mm').format(DateTime.now())}',
       widths: [8, 24, 18, 14, 10, 10, 16, 22, 42],
       lastColumn: headers.length - 1,
     );
@@ -111,9 +111,8 @@ class WorkbookExportService {
   void _fillSummary(Sheet sheet, ProcessingReport report) {
     _decorateSheet(
       sheet,
-      title: 'Executive Summary',
-      subtitle:
-          'A polished overview of performance, pass rate, and grade spread.',
+      title: 'Summary',
+      subtitle: 'Average score, pass rate, and grade counts.',
       widths: [28, 14],
       lastColumn: 1,
     );
@@ -162,8 +161,8 @@ class WorkbookExportService {
   void _fillIssues(Sheet sheet, ProcessingReport report) {
     _decorateSheet(
       sheet,
-      title: 'Issue Register',
-      subtitle: 'Every warning, fallback, and error surfaced during grading.',
+      title: 'Issues',
+      subtitle: 'Warnings, errors, and fallback cases found during processing.',
       widths: [8, 14, 18, 56],
       lastColumn: 3,
     );
@@ -193,8 +192,8 @@ class WorkbookExportService {
   void _fillChartData(Sheet sheet, ProcessingReport report) {
     _decorateSheet(
       sheet,
-      title: 'Chart Data',
-      subtitle: 'Clean counts ready for chart recreation or lecturer review.',
+      title: 'Grade Counts',
+      subtitle: 'Counts used for the chart.',
       widths: [14, 12],
       lastColumn: 1,
     );
