@@ -104,6 +104,14 @@ jobs:
           --dart-define=CAMVOTE_FIREBASE_ANDROID_API_KEY=$CAMVOTE_FIREBASE_ANDROID_API_KEY
           --dart-define=CAMVOTE_FIREBASE_IOS_API_KEY=$CAMVOTE_FIREBASE_IOS_API_KEY
 
+      - name: Upload Web Release Artifact
+        if: steps.analyze.outputs.exit_code == '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: camvote-web-release
+          path: End of Semester Project/CamVote/build/web
+          retention-days: 7
+
       - name: Ensure sensitive files are not tracked
         if: steps.analyze.outputs.exit_code == '0'
         run: |

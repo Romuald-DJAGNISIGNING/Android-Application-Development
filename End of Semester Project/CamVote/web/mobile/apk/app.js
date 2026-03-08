@@ -5,7 +5,7 @@ const AUTO_START_DELAY_MS = 860;
 const TRANSFER_REDIRECT_DELAY_MS = 1180;
 const FALLBACK_TARGETS = {
   universal:
-    'https://github.com/Romuald-DJAGNISIGNING/camvote/releases/latest/download/app-universal-release.apk',
+    'https://github.com/Romuald-DJAGNISIGNING/camvote/releases/latest/download/app-release.apk',
   arm64:
     'https://github.com/Romuald-DJAGNISIGNING/camvote/releases/latest/download/app-arm64-v8a-release.apk',
   armeabi:
@@ -186,13 +186,15 @@ async function fetchLatestTargets() {
   const payload = await response.json();
   const assets = Array.isArray(payload.assets) ? payload.assets : [];
   const named = (name) => assets.find((asset) => asset && asset.name === name);
+  const universalAsset =
+    named('app-release.apk') || named('app-universal-release.apk');
   return {
     main:
-      named('app-universal-release.apk')?.url ||
+      universalAsset?.url ||
       named('app-arm64-v8a-release.apk')?.url ||
       FALLBACK_TARGETS.universal,
     universal:
-      named('app-universal-release.apk')?.url || FALLBACK_TARGETS.universal,
+      universalAsset?.url || FALLBACK_TARGETS.universal,
     arm64: named('app-arm64-v8a-release.apk')?.url || FALLBACK_TARGETS.arm64,
     armeabi:
       named('app-armeabi-v7a-release.apk')?.url || FALLBACK_TARGETS.armeabi,
