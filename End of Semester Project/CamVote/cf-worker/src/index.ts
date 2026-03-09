@@ -4590,6 +4590,10 @@ async function handleTipMaxItQrIntent(
 
   const qrUrl = (env.MAXIT_TIP_QR_URL || '').trim();
   const deepLink = (env.MAXIT_TIP_DEEP_LINK || '').trim();
+  const orangeMoneyNumber = (env.TIP_ORANGE_MONEY_NUMBER || '').trim();
+  const orangeMoneyOwnerName = (env.TIP_ORANGE_MONEY_NAME || '').trim();
+  const exposeOrangeMoneyNumber = shouldExposeOrangeMoneyNumber(env);
+  const maskedOrangeMoneyNumber = maskPhoneNumber(orangeMoneyNumber);
   // Max It QR tipping uses an in-app asset QR fallback. If these env vars are
   // not configured, we still create the tip session and return null fields so
   // the client can render the embedded QR image.
@@ -4611,10 +4615,11 @@ async function handleTipMaxItQrIntent(
     note: payload.note || null,
     maxItQrUrl: qrUrl || null,
     maxItDeepLink: deepLink || null,
+    tipRecipientName: orangeMoneyOwnerName || null,
+    tipRecipientNumberMasked: maskedOrangeMoneyNumber || null,
     createdAt: now,
     updatedAt: now,
   });
-  const exposeOrangeMoneyNumber = shouldExposeOrangeMoneyNumber(env);
 
   return jsonResponse(
     {
@@ -4622,13 +4627,17 @@ async function handleTipMaxItQrIntent(
       tipId,
       status: 'pending',
       provider: 'maxit_qr',
+      amount: payload.amount,
+      currency: payload.currency,
+      anonymous: payload.anonymous,
       qrUrl: qrUrl || null,
       deepLink: deepLink || null,
       orangeMoney: {
         number: exposeOrangeMoneyNumber
-          ? (env.TIP_ORANGE_MONEY_NUMBER || '').trim()
+          ? orangeMoneyNumber
           : null,
-        ownerName: (env.TIP_ORANGE_MONEY_NAME || '').trim(),
+        maskedNumber: maskedOrangeMoneyNumber || null,
+        ownerName: orangeMoneyOwnerName,
       },
     },
     corsHeaders,
@@ -4653,32 +4662,55 @@ async function handleTipStatus(
     throw new HttpError(404, 'Tip not found.');
   }
 
-    const provider = docString(tipDoc, 'provider') || 'taptap_send';
-    const rawStatus = docString(tipDoc, 'status');
-    let status =
-      rawStatus.trim().toLowerCase() === 'submitted'
-        ? 'submitted'
-        : normalizeTipStatus(rawStatus);
-    const amount = Number(docInt(tipDoc, 'amount') || 0);
-    const currency = docString(tipDoc, 'currency') || 'XAF';
-    const anonymous = docBool(tipDoc, 'anonymous') === true;
+  const provider = docString(tipDoc, 'provider') || 'taptap_send';
+  const rawStatus = docString(tipDoc, 'status');
+  let status =
+    rawStatus.trim().toLowerCase() === 'submitted'
+      ? 'submitted'
+      : normalizeTipStatus(rawStatus);
+  const amount = Number(docInt(tipDoc, 'amount') || 0);
+  const currency = docString(tipDoc, 'currency') || 'XAF';
+  const anonymous = docBool(tipDoc, 'anonymous') === true;
   const senderName = anonymous
     ? 'Anonymous supporter'
     : docString(tipDoc, 'senderName') || 'Supporter';
   const receiptUrls = docArrayString(tipDoc, 'receiptUrls');
+  const checkoutUrl = docString(tipDoc, 'checkoutUrl') || null;
+  const deepLink = provider === 'maxit_qr'
+    ? docString(tipDoc, 'maxItDeepLink') || null
+    : docString(tipDoc, 'checkoutDeepLink') || null;
+  const qrUrl = provider === 'maxit_qr'
+    ? docString(tipDoc, 'maxItQrUrl') || null
+    : null;
+  const orangeMoneyNumber = (env.TIP_ORANGE_MONEY_NUMBER || '').trim();
+  const exposeOrangeMoneyNumber = shouldExposeOrangeMoneyNumber(env);
+  const maskedOrangeMoneyNumber =
+    docString(tipDoc, 'tipRecipientNumberMasked') || maskPhoneNumber(orangeMoneyNumber);
+  const orangeMoneyOwner =
+    docString(tipDoc, 'tipRecipientName') || (env.TIP_ORANGE_MONEY_NAME || '').trim();
 
-    return jsonResponse(
-      {
-        ok: true,
-        tipId: normalizedTipId,
-        provider,
-        status,
-        amount,
-        currency,
-        senderName,
+  return jsonResponse(
+    {
+      ok: true,
+      tipId: normalizedTipId,
+      provider,
+      status,
+      amount,
+      currency,
+      senderName,
       anonymous,
       senderEmail: docString(tipDoc, 'senderEmail') || null,
       receiptUrls,
+      checkoutUrl,
+      deepLink,
+      qrUrl,
+      orangeMoney: {
+        number: exposeOrangeMoneyNumber
+          ? orangeMoneyNumber
+          : null,
+        maskedNumber: maskedOrangeMoneyNumber || null,
+        ownerName: orangeMoneyOwner || null,
+      },
       updatedAt: docString(tipDoc, 'updatedAt') || null,
       thankYouMessage:
         status === 'success'

@@ -112,6 +112,9 @@ class TipRepository {
       '/v1/payments/tips/${Uri.encodeComponent(tipId)}/status',
       authRequired: false,
     );
+    final orangeMoney = response['orangeMoney'] is Map
+        ? (response['orangeMoney'] as Map).cast<String, dynamic>()
+        : const <String, dynamic>{};
     final receiptUrlsRaw = response['receiptUrls'];
     final receiptUrls = receiptUrlsRaw is List
         ? receiptUrlsRaw.map((e) => e.toString()).toList()
@@ -127,6 +130,12 @@ class TipRepository {
       senderEmail: response['senderEmail']?.toString(),
       thankYouMessage: response['thankYouMessage']?.toString(),
       receiptUrls: receiptUrls,
+      checkoutUrl: response['checkoutUrl']?.toString(),
+      qrUrl: response['qrUrl']?.toString(),
+      deepLink: response['deepLink']?.toString(),
+      orangeMoneyNumber: orangeMoney['number']?.toString(),
+      orangeMoneyMaskedNumber: orangeMoney['maskedNumber']?.toString(),
+      orangeMoneyOwner: orangeMoney['ownerName']?.toString(),
     );
   }
 

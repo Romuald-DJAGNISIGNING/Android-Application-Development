@@ -129,6 +129,7 @@ class _TipSupportScreenState extends ConsumerState<TipSupportScreen> {
       if (result.isSuccess && result.tipId == _activeTipId.trim()) {
         _stopStatusPolling();
       }
+      _restoreCheckoutSessionFromStatus(result);
       unawaited(_handleTipStatusSideEffects(result));
     });
     ref.listen<AsyncValue<TipCheckoutSession?>>(tipCheckoutProvider, (
@@ -756,6 +757,11 @@ class _TipSupportScreenState extends ConsumerState<TipSupportScreen> {
 
   TipCheckoutSession _normalizeSessionForSelectedChannel(
     TipCheckoutSession session,
+  ) => _normalizeSessionForChannel(session, _channel);
+
+  TipCheckoutSession _normalizeSessionForChannel(
+    TipCheckoutSession session,
+    TipProviderChannel channel,
   ) {
     final recipientNumber = session.orangeMoneyNumber?.trim().isNotEmpty == true
         ? session.orangeMoneyNumber!.trim()
@@ -763,20 +769,33 @@ class _TipSupportScreenState extends ConsumerState<TipSupportScreen> {
     final recipientName = session.orangeMoneyOwner?.trim().isNotEmpty == true
         ? session.orangeMoneyOwner!.trim()
         : AppConfig.tipOrangeMoneyName.trim();
+    final maskedRecipientNumber =
+        session.orangeMoneyMaskedNumber?.trim().isNotEmpty == true
+        ? session.orangeMoneyMaskedNumber!.trim()
+        : _maskPhoneNumber(recipientNumber);
     final amount = session.amount > 0
         ? session.amount
         : (int.tryParse(_amountCtrl.text.trim()) ?? 0);
     final currency = session.currency.trim().isNotEmpty
         ? session.currency.trim().toUpperCase()
         : _currency.trim().toUpperCase();
-    if (_channel == TipProviderChannel.maxItQr) {
+    if (channel == TipProviderChannel.maxItQr) {
       final qrUrl = session.qrUrl?.trim().isNotEmpty == true
           ? session.qrUrl
           : AppConfig.maxItTipQrImageUrl.trim();
-      return session.copyWith(provider: 'maxit_qr', qrUrl: qrUrl);
+      return session.copyWith(
+        provider: 'maxit_qr',
+        amount: amount,
+        currency: currency,
+        anonymous: session.anonymous || _anonymous,
+        qrUrl: qrUrl,
+        orangeMoneyNumber: recipientNumber.isNotEmpty ? recipientNumber : null,
+        orangeMoneyMaskedNumber: maskedRecipientNumber,
+        orangeMoneyOwner: recipientName.isNotEmpty ? recipientName : null,
+      );
     }
 
-    final checkoutProvider = _channel == TipProviderChannel.remitly
+    final checkoutProvider = channel == TipProviderChannel.remitly
         ? TipCheckoutProvider.remitly
         : TipCheckoutProvider.tapTapSend;
     final fallbackLinks = buildFallbackTipCheckoutLinks(
@@ -802,7 +821,53 @@ class _TipSupportScreenState extends ConsumerState<TipSupportScreen> {
       provider: checkoutProvider.apiValue,
       checkoutUrl: checkout,
       deepLink: deepLink,
+      amount: amount,
+      currency: currency,
+      orangeMoneyNumber: recipientNumber.isNotEmpty ? recipientNumber : null,
+      orangeMoneyMaskedNumber: maskedRecipientNumber,
+      orangeMoneyOwner: recipientName.isNotEmpty ? recipientName : null,
     );
+  }
+
+  void _restoreCheckoutSessionFromStatus(TipStatusResult result) {
+    if (result.tipId.trim().isEmpty ||
+        result.tipId.trim() != _activeTipId.trim()) {
+      return;
+    }
+    final recovered = result.toCheckoutSession();
+    if (recovered == null) return;
+
+    final recoveredChannel = _channelForProvider(recovered.provider);
+    final normalized = _normalizeSessionForChannel(recovered, recoveredChannel);
+    final currentSession = ref.read(tipCheckoutProvider).asData?.value;
+    final shouldReplaceSession =
+        currentSession == null ||
+        currentSession.tipId.trim() != normalized.tipId.trim() ||
+        currentSession.provider.trim().toLowerCase() !=
+            normalized.provider.trim().toLowerCase() ||
+        (currentSession.checkoutUrl?.trim().isEmpty ?? true) &&
+            (normalized.checkoutUrl?.trim().isNotEmpty ?? false) ||
+        (currentSession.qrUrl?.trim().isEmpty ?? true) &&
+            (normalized.qrUrl?.trim().isNotEmpty ?? false) ||
+        (currentSession.deepLink?.trim().isEmpty ?? true) &&
+            (normalized.deepLink?.trim().isNotEmpty ?? false);
+    if (!shouldReplaceSession) return;
+
+    if (mounted && _channel != recoveredChannel) {
+      setState(() => _channel = recoveredChannel);
+    }
+    ref.read(tipCheckoutProvider.notifier).setSession(normalized);
+  }
+
+  TipProviderChannel _channelForProvider(String providerValue) {
+    final normalized = providerValue.trim().toLowerCase();
+    if (normalized == 'remitly') {
+      return TipProviderChannel.remitly;
+    }
+    if (normalized == 'maxit_qr' || normalized == 'maxit') {
+      return TipProviderChannel.maxItQr;
+    }
+    return TipProviderChannel.tapTapSend;
   }
 
   Future<void> _submitTapTapSendProof() async {

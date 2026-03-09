@@ -85,6 +85,12 @@ class TipStatusResult {
     this.senderEmail,
     this.thankYouMessage,
     this.receiptUrls = const [],
+    this.checkoutUrl,
+    this.qrUrl,
+    this.deepLink,
+    this.orangeMoneyNumber,
+    this.orangeMoneyMaskedNumber,
+    this.orangeMoneyOwner,
   });
 
   final String tipId;
@@ -97,6 +103,12 @@ class TipStatusResult {
   final String? senderEmail;
   final String? thankYouMessage;
   final List<String> receiptUrls;
+  final String? checkoutUrl;
+  final String? qrUrl;
+  final String? deepLink;
+  final String? orangeMoneyNumber;
+  final String? orangeMoneyMaskedNumber;
+  final String? orangeMoneyOwner;
 
   bool get isSuccess {
     final normalized = status.toLowerCase();
@@ -104,6 +116,36 @@ class TipStatusResult {
         normalized == 'accepted' ||
         normalized == 'delivered' ||
         normalized == 'completed';
+  }
+
+  TipCheckoutSession? toCheckoutSession() {
+    final normalizedProvider = provider.trim().toLowerCase();
+    final isMaxIt =
+        normalizedProvider == 'maxit_qr' || normalizedProvider == 'maxit';
+    final hasRecoveryData =
+        (checkoutUrl?.trim().isNotEmpty ?? false) ||
+        (qrUrl?.trim().isNotEmpty ?? false) ||
+        (deepLink?.trim().isNotEmpty ?? false) ||
+        (orangeMoneyNumber?.trim().isNotEmpty ?? false) ||
+        (orangeMoneyMaskedNumber?.trim().isNotEmpty ?? false) ||
+        (orangeMoneyOwner?.trim().isNotEmpty ?? false);
+    if (!isMaxIt && !hasRecoveryData) {
+      return null;
+    }
+    return TipCheckoutSession(
+      tipId: tipId,
+      status: status,
+      provider: normalizedProvider.isEmpty ? 'taptap_send' : normalizedProvider,
+      anonymous: anonymous,
+      amount: amount,
+      currency: currency,
+      checkoutUrl: checkoutUrl,
+      qrUrl: qrUrl,
+      deepLink: deepLink,
+      orangeMoneyNumber: orangeMoneyNumber,
+      orangeMoneyMaskedNumber: orangeMoneyMaskedNumber,
+      orangeMoneyOwner: orangeMoneyOwner,
+    );
   }
 }
 
