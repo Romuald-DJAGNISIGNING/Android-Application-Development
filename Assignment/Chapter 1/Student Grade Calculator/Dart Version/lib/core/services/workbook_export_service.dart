@@ -1,23 +1,23 @@
-import 'dart:io';
-
 import 'package:excel/excel.dart';
 import 'package:intl/intl.dart';
 
+import '../contracts/report_exporter.dart';
+import '../models/export_artifact.dart';
+import '../models/export_format.dart';
 import '../models/grade_config.dart';
 import '../models/processing_report.dart';
 import '../models/validation_issue.dart';
+import 'export/base_report_exporter.dart';
 
-class ExportResult {
-  const ExportResult({required this.path, required this.sizeBytes});
-
-  final String path;
-  final int sizeBytes;
-}
-
-class WorkbookExportService {
+class WorkbookExportService extends BaseReportExporter
+    implements ReportExporter {
   const WorkbookExportService();
 
-  Future<ExportResult> export(
+  @override
+  ExportFormat get format => ExportFormat.excel;
+
+  @override
+  Future<ExportArtifact> export(
     ProcessingReport report,
     String destinationPath,
   ) async {
@@ -39,11 +39,7 @@ class WorkbookExportService {
       throw StateError('Could not generate workbook bytes.');
     }
 
-    final file = File(destinationPath);
-    await file.parent.create(recursive: true);
-    await file.writeAsBytes(bytes, flush: true);
-
-    return ExportResult(path: destinationPath, sizeBytes: bytes.length);
+    return writeBytes(bytes, destinationPath);
   }
 
   void _fillGrades(Sheet sheet, ProcessingReport report) {

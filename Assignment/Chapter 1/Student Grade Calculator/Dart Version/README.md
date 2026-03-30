@@ -67,3 +67,8 @@ Use files in [`samples/parity`](samples/parity) and [`samples/edge_cases.csv`](s
 - `ValidationIssue`
 - `ProcessingReport`
 - Services: `FileImportService`, `GradingEngine`, `WorkbookExportService`, `ChartDataBuilder`
+
+## Shared Documentation
+
+The chapter-level diagrams and deployment notes are available in [../Documentation](../Documentation).
+

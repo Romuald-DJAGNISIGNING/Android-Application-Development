@@ -3,14 +3,16 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:excel/excel.dart';
 
+import '../contracts/student_input_parser.dart';
 import '../models/student_input_row.dart';
 import 'column_mapping_config.dart';
 
-class FileImportService {
+class FileImportService implements StudentInputParser {
   const FileImportService({this.mapping = ColumnMappingConfig.defaults});
 
   final ColumnMappingConfig mapping;
 
+  @override
   Future<List<StudentInputRow>> parseFile(String path) {
     final lower = path.toLowerCase();
     if (lower.endsWith('.csv')) {
@@ -72,7 +74,7 @@ class FileImportService {
 
   Map<String, int> _canonicalIndices(List<String> headers) {
     final result = <String, int>{};
-    for (var index = 0; index < headers.length; index++) {
+    for (var index = 0; index <p headers.length; index++) {
       final canonical = mapping.resolveCanonical(headers[index]);
       if (canonical != null && !result.containsKey(canonical)) {
         result[canonical] = index;

@@ -29,9 +29,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.AutoGraph
+import androidx.compose.material.icons.rounded.CloudDone
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Hub
+import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.RuleFolder
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -68,6 +72,8 @@ import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
 import com.romualdsigning.studentgradecalc.domain.model.ChartPoint
+import com.romualdsigning.studentgradecalc.domain.model.ExportDestination
+import com.romualdsigning.studentgradecalc.domain.model.ExportFormat
 import com.romualdsigning.studentgradecalc.domain.model.GradeResult
 import com.romualdsigning.studentgradecalc.domain.model.IssueSeverity
 import com.romualdsigning.studentgradecalc.domain.model.ProcessingSummary
@@ -84,7 +90,7 @@ fun GradeCalculatorScreen(viewModel: GradeCalculatorViewModel = viewModel()) {
         uri?.let { viewModel.importFromUri(context, it) }
     }
     val exportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        ActivityResultContracts.CreateDocument("*/*")
     ) { uri ->
         uri?.let { viewModel.exportToUri(context, it) }
     }
@@ -116,14 +122,23 @@ fun GradeCalculatorScreen(viewModel: GradeCalculatorViewModel = viewModel()) {
                             sourceName = uiState.sourceName,
                             isLoading = uiState.isLoading,
                             canExport = uiState.report != null,
+                            canShare = uiState.lastArtifact != null,
+                            selectedFormat = uiState.selectedExportFormat,
+                            selectedDestination = uiState.selectedExportDestination,
                             error = uiState.error,
-                            exportMessage = uiState.exportMessage,
+                            deliveryMessage = uiState.deliveryMessage,
+                            lastExportName = uiState.lastArtifact?.displayName,
                             onImport = {
                                 importLauncher.launch(
                                     arrayOf("text/*", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                                 )
                             },
-                            onExport = { exportLauncher.launch("student_grade_report.xlsx") },
+                            onFormatSelected = viewModel::selectExportFormat,
+                            onDestinationSelected = viewModel::selectExportDestination,
+                            onExport = {
+                                exportLauncher.launch(uiState.selectedExportFormat.suggestedFileName())
+                            },
+                            onShare = { viewModel.shareLatestExport(context) },
                         )
                     }
                 }
@@ -295,24 +310,60 @@ private fun ActionPanel(
     sourceName: String,
     isLoading: Boolean,
     canExport: Boolean,
+    canShare: Boolean,
+    selectedFormat: ExportFormat,
+    selectedDestination: ExportDestination,
     error: String?,
-    exportMessage: String?,
+    deliveryMessage: String?,
+    lastExportName: String?,
     onImport: () -> Unit,
+    onFormatSelected: (ExportFormat) -> Unit,
+    onDestinationSelected: (ExportDestination) -> Unit,
     onExport: () -> Unit,
+    onShare: () -> Unit,
 ) {
     EditorialPanel(
-        eyebrow = "Import",
-        title = "Load marks, calculate grades, and export the result.",
-        subtitle = "Import CSV or XLSX, keep the latest duplicate row, and list any issue before export.",
+        eyebrow = "Delivery Center",
+        title = "Load marks, calculate grades, and deliver the result in the right format.",
+        subtitle = "The grading rules stay in the core module while exporters, share actions, and storage choices sit behind separate services.",
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                FeatureChip(icon = Icons.Rounded.RuleFolder, label = "Grade rules")
-                FeatureChip(icon = Icons.Rounded.AutoGraph, label = "Summary chart")
-                FeatureChip(icon = Icons.Rounded.Description, label = "Excel export")
+                FeatureChip(icon = Icons.Rounded.PictureAsPdf, label = "PDF export")
+                FeatureChip(icon = Icons.Rounded.CloudDone, label = "Cloud provider")
+                FeatureChip(icon = Icons.Rounded.Share, label = "WhatsApp / Quick Share")
+                FeatureChip(icon = Icons.Rounded.Hub, label = "Factory method")
+            }
+
+            Text(text = "Export format", style = MaterialTheme.typography.titleMedium, color = ComposeColor(0xFF18212E))
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                ExportFormat.values().forEach { format ->
+                    SelectableChip(
+                        label = format.label,
+                        selected = selectedFormat == format,
+                        onClick = { onFormatSelected(format) },
+                    )
+                }
+            }
+
+            Text(text = "Destination", style = MaterialTheme.typography.titleMedium, color = ComposeColor(0xFF18212E))
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                ExportDestination.values().forEach { destination ->
+                    DestinationCard(
+                        destination = destination,
+                        selected = selectedDestination == destination,
+                        onClick = { onDestinationSelected(destination) },
+                    )
+                }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -332,8 +383,18 @@ private fun ActionPanel(
                 ) {
                     androidx.compose.material3.Icon(Icons.Rounded.Download, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Export workbook")
+                    Text("Export selected format")
                 }
+            }
+
+            OutlinedButton(
+                onClick = onShare,
+                enabled = canShare && !isLoading,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                androidx.compose.material3.Icon(Icons.Rounded.Share, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Share latest export")
             }
 
             if (isLoading) {
@@ -353,9 +414,15 @@ private fun ActionPanel(
                 icon = Icons.Rounded.Description,
             )
             StatusCard(
+                title = "Selected delivery flow",
+                body = "${selectedFormat.label} -> ${selectedDestination.label}. Android uses the same delivery coordinator, then the system document picker decides whether the file goes to local storage or a cloud provider.",
+                accent = ComposeColor(0xFF24706A),
+                icon = Icons.Rounded.Hub,
+            )
+            StatusCard(
                 title = "Processing rule",
                 body = "If the same student appears more than once, the last row is kept. Invalid or missing marks are marked X.",
-                accent = ComposeColor(0xFF24706A),
+                accent = ComposeColor(0xFFB8743C),
                 icon = Icons.Rounded.Verified,
             )
             error?.let {
@@ -366,14 +433,81 @@ private fun ActionPanel(
                     icon = Icons.Rounded.WarningAmber,
                 )
             }
-            exportMessage?.let {
+            deliveryMessage?.let {
                 StatusCard(
-                    title = "Latest export",
+                    title = "Latest delivery",
                     body = it,
                     accent = ComposeColor(0xFF336C4F),
                     icon = Icons.Rounded.WorkspacePremium,
                 )
             }
+            lastExportName?.let {
+                StatusCard(
+                    title = "Last file",
+                    body = it,
+                    accent = ComposeColor(0xFF72408C),
+                    icon = Icons.Rounded.Description,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SelectableChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = if (selected) ComposeColor(0xFF18314F) else ComposeColor(0xFFF8F2E8),
+            contentColor = if (selected) ComposeColor.White else ComposeColor(0xFF243142),
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (selected) ComposeColor(0xFF18314F) else ComposeColor(0xFFE4D4BD),
+        ),
+    ) {
+        Text(label)
+    }
+}
+
+@Composable
+private fun DestinationCard(
+    destination: ExportDestination,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val accent = if (selected) ComposeColor(0xFF24706A) else ComposeColor(0xFF8C7760)
+
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) ComposeColor(0xFFEAF4F2) else ComposeColor(0xFFFFFCF6),
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            accent.copy(alpha = if (selected) 0.4f else 0.18f),
+        ),
+    ) {
+        Column(
+            modifier = Modifier.width(220.dp).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            androidx.compose.material3.Icon(
+                imageVector = if (destination == ExportDestination.LOCAL) {
+                    Icons.Rounded.Download
+                } else {
+                    Icons.Rounded.CloudDone
+                },
+                contentDescription = null,
+                tint = accent,
+            )
+            Text(text = destination.label, style = MaterialTheme.typography.titleMedium, color = accent)
+            Text(
+                text = destination.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = ComposeColor(0xFF4B5563),
+            )
         }
     }
 }
@@ -780,3 +914,4 @@ private fun gradeTone(letter: String): ComposeColor =
 private fun Float.toStringAsFixed(decimals: Int): String = "%.${decimals}f".format(this)
 
 private fun Double.toStringAsFixed(decimals: Int): String = "%.${decimals}f".format(this)
+

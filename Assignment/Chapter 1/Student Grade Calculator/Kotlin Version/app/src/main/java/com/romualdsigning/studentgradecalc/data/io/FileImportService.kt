@@ -4,12 +4,14 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import com.romualdsigning.studentgradecalc.domain.model.StudentInputRow
+import com.romualdsigning.studentgradecalc.domain.service.StudentInputParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.poi.ss.usermodel.DataFormatter
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
-class FileImportService {
+class FileImportService : StudentInputParser {
+    override
     suspend fun parse(context: Context, uri: Uri): List<StudentInputRow> = withContext(Dispatchers.IO) {
         val extension = detectExtension(context, uri)
         when (extension) {

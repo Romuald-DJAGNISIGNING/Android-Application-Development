@@ -2,6 +2,10 @@ package com.romualdsigning.studentgradecalc.data.io
 
 import android.content.Context
 import android.net.Uri
+import com.romualdsigning.studentgradecalc.data.export.AbstractReportExporter
+import com.romualdsigning.studentgradecalc.domain.model.ExportArtifact
+import com.romualdsigning.studentgradecalc.domain.model.ExportDestination
+import com.romualdsigning.studentgradecalc.domain.model.ExportFormat
 import com.romualdsigning.studentgradecalc.domain.model.IssueSeverity
 import com.romualdsigning.studentgradecalc.domain.model.ProcessingReport
 import kotlinx.coroutines.Dispatchers
@@ -21,8 +25,15 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class WorkbookExportService {
-    suspend fun export(context: Context, report: ProcessingReport, destination: Uri): ExportResult =
+class WorkbookExportService : AbstractReportExporter() {
+    override val format: ExportFormat = ExportFormat.EXCEL
+
+    override suspend fun export(
+        context: Context,
+        report: ProcessingReport,
+        destination: Uri,
+        exportDestination: ExportDestination,
+    ): ExportArtifact =
         withContext(Dispatchers.IO) {
             XSSFWorkbook().use { workbook ->
                 val palette = WorkbookPalette(workbook)
@@ -36,12 +47,12 @@ class WorkbookExportService {
                 fillIssues(issues, report, palette)
                 fillChart(chart, report, palette)
 
-                context.contentResolver.openOutputStream(destination)?.use(workbook::write)
-                    ?: error("Could not open output stream.")
+                val bytes = java.io.ByteArrayOutputStream().use { output ->
+                    workbook.write(output)
+                    output.toByteArray()
+                }
+                return@withContext writeBytes(context, destination, bytes, exportDestination)
             }
-
-            val size = context.contentResolver.openFileDescriptor(destination, "r")?.use { it.statSize }
-            ExportResult(uri = destination, sizeBytes = size)
         }
 
     private fun fillGrades(sheet: XSSFSheet, report: ProcessingReport, palette: WorkbookPalette) {
@@ -412,8 +423,3 @@ private class WorkbookPalette(private val workbook: XSSFWorkbook) {
 
     private data class Tone(val fill: Short, val font: Short)
 }
-
-data class ExportResult(
-    val uri: Uri,
-    val sizeBytes: Long?,
-)

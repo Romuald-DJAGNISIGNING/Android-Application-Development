@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:student_gradecalc_dart/main.dart';
+import 'package:student_gradecalc_dart/app/grade_calc_app.dart';
 
 void main() {
   testWidgets('app boots', (tester) async {
