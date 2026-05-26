@@ -1,0 +1,36 @@
+CAMVOTE - Points cles du Code electoral camerounais (Resume non officiel)
+
+Sources:
+- Code electoral (ELECAM) : http://www.elecam.cm/uploads/media/Electoral_Code_Fnl_.pdf
+- FAQ ELECAM : https://portail.elecam.cm/en/faq/
+- Campagne d'inscription ELECAM 2025 : https://www.elecam.cm/?q=en/content/elections-cameroon-electoral-registration-campaign-2025
+- Constitution du Cameroun (Organisation de l'Etat) : https://www.prc.cm/en/cameroon/organization-of-the-state
+- Avis d'inscription (Ambassade du Cameroun - Pays-Bas) : https://www.cameroon-embassy.nl/registration-on-the-electoral-lists/
+
+Points cles :
+1) Age electoral et suffrage
+   - Le vote est egal et secret.
+   - Tous les citoyens ages d'au moins 20 ans ont le droit de voter.
+
+2) Eligibilite au vote
+   - Tout citoyen camerounais (homme ou femme) inscrit sur une liste electorale
+     et non frappe d'incapacite legale peut voter.
+
+3) Listes electorales
+   - La revision consiste a nettoyer et actualiser les listes existantes.
+   - La recomposition signifie une nouvelle inscription de tous les electeurs.
+
+4) Periode annuelle de revision
+   - ELECAM indique que la revision annuelle se deroule du 1er janvier au 31 aout,
+     sauf convocation du college electoral.
+
+5) Secret du vote
+   - Le vote secret est un vote individuel ou aucun electeur ne connait le choix d'un autre.
+
+6) Vote a l'etranger
+   - Les avis d'ambassade exigent un passeport, une carte consulaire et un titre de sejour.
+   - Les exigences peuvent varier selon la mission.
+
+Notes :
+- Ce resume est informatif et ne remplace pas le texte integral du Code electoral.
+- Consultez toujours les publications officielles d'ELECAM et les textes juridiques.
