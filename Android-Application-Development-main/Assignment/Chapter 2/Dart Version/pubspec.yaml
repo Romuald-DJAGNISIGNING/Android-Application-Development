@@ -1,0 +1,8 @@
+name: chapter2_dart_essentials
+description: Chapter 2 Dart exercises and milestones for Android Application Development.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.10.7
+
