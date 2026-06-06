@@ -8,8 +8,9 @@ RUN apt-get update && apt-get install -y curl git unzip xz-utils zip libglu1-mes
 RUN git clone https://github.com/flutter/flutter.git --depth 1 --branch 3.41.6 /opt/flutter
 
 ENV 
-PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}" 
-What to Expect RUN flutter doctor RUN 
+ENV PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:${PATH}"
+
+RUN flutter doctor
 flutter config --enable-web The build will 
 proceed past Step 9 this time. The next 
 thing to watch for is whether lib/gen/l10n/ 
