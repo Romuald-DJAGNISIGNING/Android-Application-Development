@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y curl git unzip xz-utils zip libglu1-mes
 
 RUN git clone https://github.com/flutter/flutter.git --depth 1 --branch 3.41.6 /opt/flutter
 
-ENV 
 ENV PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:${PATH}"
 
 RUN flutter doctor
