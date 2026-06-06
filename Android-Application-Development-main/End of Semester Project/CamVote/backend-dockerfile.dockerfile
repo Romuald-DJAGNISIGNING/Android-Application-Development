@@ -1,22 +1,21 @@
-FROM python:3.10-slim
+FROM node:22-slim
 
 WORKDIR /app
-
-# Install system dependencies needed for AI models / OpenCV if applicable
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
+    libc6 \
+    libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
+   ENV CI=true
+# Install wrangler globally to run the cloudflare worker locally
+RUN npm install -g wrangler
+# Copy the global package files first
+COPY package*.json ./
+RUN npm install
 
-# Copy requirements and install python libraries
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the cf-worker directory code
+COPY cf-worker/ ./cf-worker/
 
-# Copy the rest of your backend code
-COPY . .
+EXPOSE 8787
 
-EXPOSE 8000
-
-# Adjust this command depending on your entry point (e.g., uvicorn main:app)
-CMD ["python", "main.py"]
+# Run wrangler locally in dev/local mode targeting your worker folder
+CMD ["npx", "wrangler", "dev", "./cf-worker/src/index.ts", "--ip", "0.0.0.0", "--port", "8787", "--local", "--show-interactive-dev-session=false"]
