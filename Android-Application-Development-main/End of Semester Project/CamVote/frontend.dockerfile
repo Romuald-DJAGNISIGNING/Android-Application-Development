@@ -2,9 +2,8 @@
 # files 4. Rebuild (Docker will now run pub 
 # get as a proper step)FROM debian:latest 
 # AS build-env
-docker build -f frontend.dockerfile -t 
-camvote-frontend:latest . RUN apt-get 
-update && apt-get install -y curl git unzip 
+FROM debian:latest AS build-env
+RUN apt-get update && apt-get install -y curl git unzip
 xz-utils zip libglu1-mesa RUN git clone 
 https://github.com/flutter/flutter.git 
 --depth 1 --branch 3.41.6 
