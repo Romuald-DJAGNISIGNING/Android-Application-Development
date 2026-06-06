@@ -58,8 +58,8 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: YOUR_DOCKERHUB_USERNAME/camvote-frontend:latest
-        imagePullPolicy: Always # Fixes the ErrImageNeverPull error!
+        image: camvote-frontend:latest
+        imagePullPolicy: Never # Fixes the ErrImageNeverPull error!
         ports:
         - containerPort: 80
         env:
@@ -81,16 +81,4 @@ spec:
       port: 80
       targetPort: 80
       nodePort: 30080 # Exposes the web interface externally on your server
-      env:
-        - name: NODE_ENV
-          value: "production"
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: camvote-secrets
-              key: DATABASE_URL
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: camvote-secrets
-              key: JWT_SECRET
+             
